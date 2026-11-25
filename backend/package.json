@@ -1,0 +1,19 @@
+{
+  "name": "oracle-cloud-monitoring-backend",
+  "version": "1.0.0",
+  "description": "Serverless AWS Lambda + API Gateway backend for Oracle Fusion Cloud & OIC Job Failure Monitoring",
+  "main": "src/local-server.js",
+  "scripts": {
+    "start": "node src/local-server.js",
+    "start:mysql": "node -e \"process.env.DB_MODE='mysql'; require('./src/local-server.js')\"",
+    "seed:generate": "node ../database/generate-seed.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "angular": "^1.8.3",
+    "angular-route": "^1.8.3",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "mysql2": "^3.11.5"
+  }
+}

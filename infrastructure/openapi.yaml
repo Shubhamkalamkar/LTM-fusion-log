@@ -1,0 +1,300 @@
+openapi: 3.0.3
+info:
+  title: Oracle Fusion Cloud & OIC Job Failure Monitoring API
+  version: 1.0.0
+  description: >
+    REST API exposed via Amazon API Gateway and backed by Node.js AWS Lambda functions
+    and Amazon RDS for MySQL.
+
+servers:
+  - url: https://{apiId}.execute-api.{region}.amazonaws.com/prod
+    description: Amazon API Gateway Production Stage
+  - url: http://localhost:3000/api
+    description: Local Express API Gateway Simulator
+
+paths:
+  /dashboard/summary:
+    get:
+      summary: Return KPIs, success rates, critical failures, and impacted downstream systems
+      parameters:
+        - name: module
+          in: query
+          schema: { type: string }
+        - name: dateFrom
+          in: query
+          schema: { type: string, format: date }
+        - name: dateTo
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Dashboard summary metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fusionTotal: { type: integer }
+                  fusionFailed: { type: integer }
+                  fusionSuccessRate: { type: number }
+                  oicTotal: { type: integer }
+                  oicFailed: { type: integer }
+                  oicSuccessRate: { type: number }
+                  criticalFailures: { type: integer }
+                  openIncidents: { type: integer }
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /fusion/jobs:
+    get:
+      summary: List Oracle Fusion job executions with filtering, sorting, pagination, and CSV export
+      parameters:
+        - $ref: '#/components/parameters/StatusFilter'
+        - $ref: '#/components/parameters/SeverityFilter'
+        - name: module
+          in: query
+          schema: { type: string }
+        - name: jobName
+          in: query
+          schema: { type: string }
+        - $ref: '#/components/parameters/DateFrom'
+        - $ref: '#/components/parameters/DateTo'
+        - $ref: '#/components/parameters/SearchFilter'
+        - $ref: '#/components/parameters/FormatFilter'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Paginated list of Fusion job executions or CSV file
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /fusion/jobs/failed:
+    get:
+      summary: List failed Oracle Fusion job executions
+      parameters:
+        - $ref: '#/components/parameters/SeverityFilter'
+        - name: module
+          in: query
+          schema: { type: string }
+        - $ref: '#/components/parameters/FormatFilter'
+      responses:
+        '200':
+          description: Failed Fusion executions
+
+  /fusion/jobs/{executionId}:
+    get:
+      summary: Get one Oracle Fusion execution with correlation context
+      parameters:
+        - name: executionId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Execution details and correlation chain
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /oic/integrations:
+    get:
+      summary: List OIC integration executions with filtering, sorting, pagination, and CSV export
+      parameters:
+        - $ref: '#/components/parameters/StatusFilter'
+        - $ref: '#/components/parameters/SeverityFilter'
+        - name: source
+          in: query
+          schema: { type: string }
+        - name: target
+          in: query
+          schema: { type: string }
+        - name: integration
+          in: query
+          schema: { type: string }
+        - $ref: '#/components/parameters/DateFrom'
+        - $ref: '#/components/parameters/DateTo'
+        - $ref: '#/components/parameters/FormatFilter'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Paginated list of OIC executions or CSV file
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /oic/integrations/failed:
+    get:
+      summary: List failed OIC integration executions
+      responses:
+        '200':
+          description: Failed OIC executions
+
+  /oic/integrations/{instanceId}:
+    get:
+      summary: Get one OIC integration execution with downstream impact and correlation context
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OIC execution detail
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /incidents:
+    get:
+      summary: List failure incidents with filters
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [Open, Investigating, Retry Initiated, Resolved, Closed]
+        - $ref: '#/components/parameters/SeverityFilter'
+        - name: sourceType
+          in: query
+          schema: { type: string, enum: [FUSION, OIC] }
+        - $ref: '#/components/parameters/FormatFilter'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Paginated list of incidents
+
+  /incidents/{incidentId}:
+    get:
+      summary: Get incident detail, end-to-end correlation chain, and audit history
+      parameters:
+        - name: incidentId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Incident detail
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /incidents/{incidentId}/status:
+    put:
+      summary: Update incident workflow status and record audit trail
+      parameters:
+        - name: incidentId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [Open, Investigating, Retry Initiated, Resolved, Closed]
+                notes: { type: string }
+                performedBy: { type: string }
+      responses:
+        '200':
+          description: Updated incident
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /incidents/{incidentId}/retry:
+    post:
+      summary: Simulate retry for a failed incident (increments retry count and logs history)
+      parameters:
+        - name: incidentId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes: { type: string }
+                performedBy: { type: string }
+      responses:
+        '200':
+          description: Retry simulated and incident updated
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /simulator/tick:
+    post:
+      summary: Trigger simulated Fusion or OIC execution event
+      responses:
+        '201':
+          description: Simulated event created
+
+components:
+  parameters:
+    StatusFilter:
+      name: status
+      in: query
+      schema: { type: string, enum: [SUCCESS, FAILED, RUNNING, WARNING] }
+    SeverityFilter:
+      name: severity
+      in: query
+      schema: { type: string, enum: [Critical, High, Medium, Low] }
+    DateFrom:
+      name: dateFrom
+      in: query
+      schema: { type: string }
+    DateTo:
+      name: dateTo
+      in: query
+      schema: { type: string }
+    SearchFilter:
+      name: search
+      in: query
+      schema: { type: string }
+    FormatFilter:
+      name: format
+      in: query
+      schema: { type: string, enum: [json, csv] }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+
+  responses:
+    ValidationError:
+      description: Input validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFoundError:
+      description: Requested resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        requestId: { type: string }
+        timestamp: { type: string, format: date-time }
+        statusCode: { type: integer }
+        message: { type: string }
+        details:
+          type: array
+          items: { type: string }

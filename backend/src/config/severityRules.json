@@ -1,0 +1,83 @@
+{
+  "version": "1.0.0",
+  "correlationTimeWindowMinutes": 15,
+  "rules": [
+    {
+      "ruleCode": "RULE_CRIT_FINANCE_AUTH",
+      "sourceType": "ANY",
+      "errorCategory": "Authentication / authorization",
+      "moduleOrFamily": null,
+      "targetCriticality": "Critical",
+      "assignedSeverity": "Critical",
+      "autoCreateIncident": true,
+      "priority": 10,
+      "description": "Authentication outage affecting Critical downstream systems"
+    },
+    {
+      "ruleCode": "RULE_CRIT_FINANCE_CTRL",
+      "sourceType": "FUSION",
+      "errorCategory": "Finance control",
+      "moduleOrFamily": "General Ledger",
+      "targetCriticality": null,
+      "assignedSeverity": "Critical",
+      "autoCreateIncident": true,
+      "priority": 15,
+      "description": "Closed accounting period or invalid ledger blocks GL posting"
+    },
+    {
+      "ruleCode": "RULE_CRIT_TARGET_SYSTEM",
+      "sourceType": "OIC",
+      "errorCategory": null,
+      "moduleOrFamily": null,
+      "targetCriticality": "Critical",
+      "assignedSeverity": "Critical",
+      "autoCreateIncident": true,
+      "priority": 20,
+      "description": "OIC integration failure targeting a Critical system (Payroll, WMS, Banking)"
+    },
+    {
+      "ruleCode": "RULE_CRIT_SCM_PLAN",
+      "sourceType": "FUSION",
+      "errorCategory": "Application",
+      "moduleOrFamily": "Supply Chain",
+      "targetCriticality": null,
+      "assignedSeverity": "Critical",
+      "autoCreateIncident": true,
+      "priority": 25,
+      "description": "Supply planning failure delaying downstream logistics"
+    },
+    {
+      "ruleCode": "RULE_HIGH_CONNECTIVITY",
+      "sourceType": "ANY",
+      "errorCategory": "Connectivity",
+      "moduleOrFamily": null,
+      "targetCriticality": null,
+      "assignedSeverity": "High",
+      "autoCreateIncident": true,
+      "priority": 30,
+      "description": "Connection timeout, DNS failure, or target endpoint unreachable"
+    },
+    {
+      "ruleCode": "RULE_HIGH_PAYLOAD_FINANCE",
+      "sourceType": "ANY",
+      "errorCategory": "Payload / validation",
+      "moduleOrFamily": null,
+      "targetCriticality": null,
+      "assignedSeverity": "High",
+      "autoCreateIncident": true,
+      "priority": 40,
+      "description": "Invoice, customer, or purchase-order payload validation failure"
+    },
+    {
+      "ruleCode": "RULE_MED_DATA_QUALITY",
+      "sourceType": "ANY",
+      "errorCategory": "Data quality",
+      "moduleOrFamily": null,
+      "targetCriticality": null,
+      "assignedSeverity": "Medium",
+      "autoCreateIncident": true,
+      "priority": 50,
+      "description": "Reporting, extract, or limited employee/date data quality error"
+    }
+  ]
+}

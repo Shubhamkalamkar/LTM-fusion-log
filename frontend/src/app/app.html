@@ -1,0 +1,44 @@
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark">OC</div>
+      <div>
+        <div class="brand-title">Oracle Cloud Operations Monitor</div>
+        <div class="brand-sub">Angular 20 &bull; Fusion Cloud ESS &bull; Oracle Integration Cloud &bull; AWS Serverless</div>
+      </div>
+    </div>
+
+    <nav class="nav-tabs" aria-label="Main navigation">
+      <a routerLink="/dashboard" routerLinkActive="active">Operations Dashboard</a>
+      <a routerLink="/fusion" routerLinkActive="active">Fusion Job Monitor</a>
+      <a routerLink="/oic" routerLinkActive="active">OIC Integration Monitor</a>
+      <a routerLink="/incidents" routerLinkActive="active">Incidents &amp; Correlation</a>
+    </nav>
+
+    <div class="topbar-actions">
+      <span class="meta-pill" title="All backend timestamps are stored and displayed in UTC">TZ: UTC</span>
+      <span class="meta-pill" [class.pill-green]="api.dbMode() === 'mysql'" [class.pill-blue]="api.dbMode() !== 'mysql'">
+        Store: {{ api.dbMode() }}
+      </span>
+      <button class="btn btn-outline-light btn-sm" (click)="simulateFailure()" [disabled]="simulating()">
+        {{ simulating() ? 'Simulating...' : '+ Simulate Failure' }}
+      </button>
+    </div>
+  </div>
+</header>
+
+@if (api.toast(); as t) {
+  <div [class]="'toast-banner toast-' + t.type">
+    <span>{{ t.message }}</span>
+    <button class="toast-close" (click)="api.clearToast()">&times;</button>
+  </div>
+}
+
+<main class="container">
+  <router-outlet></router-outlet>
+</main>
+
+<footer class="footer">
+  <div>Oracle Fusion Cloud &amp; OIC Job Failure Monitoring Prototype &bull; Angular 20 + API Gateway + Node.js Lambda + MySQL</div>
+  <div>All timestamps displayed in UTC &bull; Simulated operational feed (no live Oracle instance connected)</div>
+</footer>
