@@ -1,0 +1,16 @@
+:host {
+  display: block;
+}
+
+.exec-ref {
+  margin-left: 4px;
+}
+
+.module-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.muted-text {
+  color: var(--muted);
+}

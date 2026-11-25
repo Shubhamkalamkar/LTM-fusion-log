@@ -1,0 +1,35 @@
+:host {
+  display: block;
+}
+
+.corr-id-line {
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.corr-node-tier {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.corr-node-title {
+  font-weight: 700;
+  margin: 2px 0;
+}
+
+.corr-node-meta {
+  font-size: 12px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.corr-impact-box {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+}

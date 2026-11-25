@@ -6,7 +6,8 @@ import { MonitoringApiService } from './services/monitoring-api.service';
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
-  templateUrl: './app.html'
+  templateUrl: './app.html',
+  styleUrl: './app.css'
 })
 export class App implements OnInit {
   readonly simulating = signal(false);

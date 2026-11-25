@@ -1,0 +1,17 @@
+:host {
+  display: block;
+}
+
+.impact-caption {
+  font-size: 11px;
+  color: var(--red);
+  font-weight: 600;
+}
+
+.err-cell {
+  max-width: 240px;
+}
+
+.muted-text {
+  color: var(--muted);
+}

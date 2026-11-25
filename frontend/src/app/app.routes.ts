@@ -1,11 +1,11 @@
 import { Routes } from '@angular/router';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
-import { FusionListComponent } from './pages/fusion/fusion-list.component';
-import { FusionDetailComponent } from './pages/fusion/fusion-detail.component';
-import { OicListComponent } from './pages/oic/oic-list.component';
-import { OicDetailComponent } from './pages/oic/oic-detail.component';
-import { IncidentsListComponent } from './pages/incidents/incidents-list.component';
-import { IncidentDetailComponent } from './pages/incidents/incident-detail.component';
+import { FusionListComponent } from './pages/fusion/fusion-list/fusion-list.component';
+import { FusionDetailComponent } from './pages/fusion/fusion-detail/fusion-detail.component';
+import { OicListComponent } from './pages/oic/oic-list/oic-list.component';
+import { OicDetailComponent } from './pages/oic/oic-detail/oic-detail.component';
+import { IncidentsListComponent } from './pages/incidents/incidents-list/incidents-list.component';
+import { IncidentDetailComponent } from './pages/incidents/incident-detail/incident-detail.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },

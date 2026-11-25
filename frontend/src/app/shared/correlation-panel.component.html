@@ -1,0 +1,64 @@
+@if (correlation) {
+  <div class="card">
+    <div class="card-title">
+      <span>End-to-End Business Transaction Correlation</span>
+      <span [class]="correlation.isExactMatch ? 'badge badge-critical' : 'badge badge-warning'">
+        {{ correlation.relationshipType }}
+      </span>
+    </div>
+
+    <div class="corr-box">
+      <div class="corr-id-line">
+        <strong>Correlation ID:</strong>
+        <span class="mono">{{ correlation.correlationId || 'None (matched via process family & ±' + correlation.timeWindowMinutes + ' min window)' }}</span>
+      </div>
+
+      <div class="corr-chain">
+        @for (f of correlation.fusionExecutions; track f.execution_id) {
+          <div class="corr-node" [class.node-failed]="f.status === 'FAILED'" [class.node-success]="f.status === 'SUCCESS'">
+            <div class="corr-node-tier">ORACLE FUSION JOB</div>
+            <div class="corr-node-title">
+              <a [routerLink]="['/fusion', f.execution_id]">{{ f.execution_id }}</a> &bull; {{ f.job_name }}
+            </div>
+            <div class="corr-node-meta">
+              <span [class]="badgeClass(f.status)">{{ f.status }}</span>
+              <span>{{ f.module }}</span>
+            </div>
+          </div>
+        }
+
+        @if (correlation.fusionExecutions.length > 0 && correlation.oicExecutions.length > 0) {
+          <div class="corr-arrow">&rarr;</div>
+        }
+
+        @for (o of correlation.oicExecutions; track o.instance_id) {
+          <div class="corr-node" [class.node-failed]="o.status === 'FAILED'" [class.node-success]="o.status === 'SUCCESS'">
+            <div class="corr-node-tier">OIC INTEGRATION</div>
+            <div class="corr-node-title">
+              <a [routerLink]="['/oic', o.instance_id]">{{ o.instance_id }}</a> &bull; {{ o.integration_name }}
+            </div>
+            <div class="corr-node-meta">
+              <span [class]="badgeClass(o.status)">{{ o.status }}</span>
+              <span>{{ o.source_system }}</span>
+            </div>
+          </div>
+        }
+
+        @if (correlation.impactedDownstream.length > 0) {
+          <div class="corr-arrow">&rarr;</div>
+          @for (d of correlation.impactedDownstream; track d.system_id) {
+            <div class="corr-node node-downstream">
+              <div class="corr-node-tier">DOWNSTREAM SYSTEM</div>
+              <div class="corr-node-title">{{ d.system_name }}</div>
+              <span [class]="badgeClass(d.criticality)">{{ d.criticality }} Criticality</span>
+            </div>
+          }
+        }
+      </div>
+
+      <div class="corr-impact-box">
+        <strong>Impact Assessment:</strong> {{ correlation.businessImpact }}
+      </div>
+    </div>
+  </div>
+}

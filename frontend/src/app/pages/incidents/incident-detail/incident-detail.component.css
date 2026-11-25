@@ -1,0 +1,24 @@
+:host {
+  display: block;
+}
+
+.badge-group {
+  display: flex;
+  gap: 6px;
+}
+
+.detail-error {
+  margin-top: 14px;
+  margin-bottom: 0;
+}
+
+.status-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+}

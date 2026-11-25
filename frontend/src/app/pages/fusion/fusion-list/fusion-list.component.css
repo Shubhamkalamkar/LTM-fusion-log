@@ -1,0 +1,11 @@
+:host {
+  display: block;
+}
+
+.err-cell {
+  max-width: 260px;
+}
+
+.muted-text {
+  color: var(--muted);
+}
