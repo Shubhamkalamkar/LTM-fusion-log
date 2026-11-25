@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, Subject } from 'rxjs';
+import { environment } from '../../environments/environment';
 import {
   DashboardSummary,
   FailureIncident,
@@ -11,7 +12,7 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class MonitoringApiService {
-  private readonly baseUrl = '/api';
+  private readonly baseUrl = environment.apiBaseUrl;
 
   readonly dbMode = signal<string>('auto');
   readonly toast = signal<{ message: string; type: 'info' | 'success' | 'error' } | null>(null);

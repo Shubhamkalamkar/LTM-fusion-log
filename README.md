@@ -65,7 +65,7 @@ npm install
 
 cd "d:\Projects\LTM Assignment\frontend"
 npm install
-npm run build
+npm run build:local
 ```
 
 ### Step 2A: Run Instantly (Auto / In-Memory Fallback Mode)
@@ -133,9 +133,20 @@ npm test
 
 1. Provision Amazon RDS for MySQL 8.0 and run `database/schema.sql` followed by `database/seed.sql`.
 2. Store RDS credentials in AWS Secrets Manager (optional) and note the Secret ARN.
-3. Build and deploy the serverless backend:
-   ```bash
+3. Build and deploy the full AWS stack (API Gateway + 5 Lambdas + Private S3 Bucket + CloudFront OAC Distribution):
+   ```powershell
    sam build -t infrastructure/template.yaml
    sam deploy --guided
    ```
-4. Build the Angular 20 frontend (`npm run build` in `frontend/`) and upload `frontend/dist/oracle-monitor/browser/` to Amazon S3 behind CloudFront.
+   Note the stack outputs: `ApiEndpoint`, `FrontendBucketName`, `CloudFrontDistributionId`, and `CloudFrontUrl`.
+4. Update `apiBaseUrl` in `frontend/src/environments/environment.prod.ts` with your deployed `ApiEndpoint`, then build the production Angular 20 bundle:
+   ```powershell
+   cd "d:\Projects\LTM Assignment\frontend"
+   npm run build
+   ```
+5. Sync the Angular 20 build to S3 and invalidate CloudFront cache:
+   ```powershell
+   aws s3 sync dist/oracle-monitor/browser/ s3://<FrontendBucketName>/ --delete
+   aws cloudfront create-invalidation --distribution-id <CloudFrontDistributionId> --paths "/*"
+   ```
+6. Open `<CloudFrontUrl>` in your browser! Locally, `npm run build:local` uses `environment.ts` (`apiBaseUrl: '/api'`) so `http://localhost:3000` keeps working out of the box.
