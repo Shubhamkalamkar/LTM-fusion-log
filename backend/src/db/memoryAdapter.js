@@ -1,6 +1,6 @@
 'use strict';
 
-const { buildDataset } = require('../../../database/dataset');
+const { buildDataset } = require('../config/dataset');
 
 function normalizeDateBound(val, isEnd = false) {
   if (!val) return null;

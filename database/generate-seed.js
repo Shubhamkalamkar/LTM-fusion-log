@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { buildDataset } = require('./dataset');
+const { buildDataset } = require('../backend/src/config/dataset');
 
 function sqlVal(val) {
   if (val === null || val === undefined) return 'NULL';

@@ -38,6 +38,7 @@
         </div>
       </div>
       <div class="detail-item"><div class="label">Start Time (UTC)</div><div class="val mono">{{ d.start_time }}</div></div>
+      <div class="detail-item"><div class="label">End Time (UTC)</div><div class="val mono">{{ d.end_time || 'In Progress' }}</div></div>
       <div class="detail-item"><div class="label">Duration</div><div class="val">{{ formatDuration(d.duration_seconds) }}</div></div>
       <div class="detail-item"><div class="label">Correlation ID</div><div class="val mono">{{ d.correlation_id || 'None' }}</div></div>
       <div class="detail-item"><div class="label">Retry Count</div><div class="val">{{ d.retry_count }}</div></div>

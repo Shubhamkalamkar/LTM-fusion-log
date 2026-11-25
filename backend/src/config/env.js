@@ -6,8 +6,8 @@ module.exports = {
   mysql: {
     host: process.env.DB_HOST || '127.0.0.1',
     port: Number(process.env.DB_PORT || 3306),
-    user: process.env.DB_USER || 'monitor_app',
-    password: process.env.DB_PASSWORD || 'monitor_password',
+    user: process.env.DB_USER || '',
+    password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'oracle_monitoring',
     connectionLimit: Number(process.env.DB_POOL_LIMIT || 10),
     connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT_MS || 4000)

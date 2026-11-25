@@ -36,6 +36,7 @@ Parameters:
 
 Conditions:
   UseVpc: !Not [!Equals [!Join ["", !Ref VpcSubnetIds], ""]]
+  UseSecret: !Not [!Equals [!Ref DbSecretArn, ""]]
 
 Globals:
   Function:
@@ -58,6 +59,32 @@ Globals:
       - !Ref AWS::NoValue
 
 Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Policies:
+        - !If
+          - UseSecret
+          - PolicyName: ReadRdsSecret
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - secretsmanager:GetSecretValue
+                  Resource: !Ref DbSecretArn
+          - !Ref AWS::NoValue
+
   MonitoringApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -74,6 +101,7 @@ Resources:
       FunctionName: oracle-monitor-dashboard
       CodeUri: ../backend
       Handler: src/handlers/dashboard.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
       Events:
         GetSummary:
           Type: Api
@@ -94,6 +122,7 @@ Resources:
       FunctionName: oracle-monitor-fusion-jobs
       CodeUri: ../backend
       Handler: src/handlers/fusionJobs.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
       Events:
         ListJobs:
           Type: Api
@@ -120,6 +149,7 @@ Resources:
       FunctionName: oracle-monitor-oic-integrations
       CodeUri: ../backend
       Handler: src/handlers/oicIntegrations.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
       Events:
         ListOic:
           Type: Api
@@ -146,6 +176,7 @@ Resources:
       FunctionName: oracle-monitor-incidents
       CodeUri: ../backend
       Handler: src/handlers/incidents.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
       Events:
         ListIncidents:
           Type: Api
@@ -178,6 +209,7 @@ Resources:
       FunctionName: oracle-monitor-data-generator
       CodeUri: ../backend
       Handler: src/handlers/dataGenerator.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
       Events:
         ScheduledTick:
           Type: Schedule

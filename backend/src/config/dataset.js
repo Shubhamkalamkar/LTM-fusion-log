@@ -176,7 +176,6 @@ function addMinutes(baseDate, minutes) {
   return new Date(baseDate.getTime() + minutes * 60000);
 }
 
-// Deterministic pseudo-random helper so seeds are identical across runs
 function createRng(seed = 20261125) {
   let state = seed >>> 0;
   return () => {
@@ -187,16 +186,14 @@ function createRng(seed = 20261125) {
 
 function buildDataset() {
   const rng = createRng(20261125);
-  const anchor = new Date('2026-11-25T13:30:00Z'); // ~19:00 IST on 2026-11-25
+  const anchor = new Date('2026-11-25T13:30:00Z');
 
   const fusionExecutions = [];
   const oicExecutions = [];
   const incidents = [];
   const incidentHistory = [];
 
-  // --------------------------------------------------------------------------
   // 1. Exact Sample Fusion Executions from Section 7.1 (FUS1001..FUS1006)
-  // --------------------------------------------------------------------------
   const sampleFusion = [
     {
       execution_id: 'FUS1001',
@@ -257,7 +254,7 @@ function buildDataset() {
     {
       execution_id: 'FUS1005',
       job_id: 'FJ05',
-      correlation_id: 'CORR-SCM-20261125-05', // Exact correlation with OIC2005!
+      correlation_id: 'CORR-SCM-20261125-05',
       status: 'FAILED',
       severity: 'Critical',
       start_time: '2026-11-25 10:00:00',
@@ -271,7 +268,7 @@ function buildDataset() {
     {
       execution_id: 'FUS1006',
       job_id: 'FJ06',
-      correlation_id: null, // Demonstrates time-window potential relationship with OIC2003!
+      correlation_id: null,
       status: 'FAILED',
       severity: 'Medium',
       start_time: '2026-11-25 10:30:00',
@@ -285,9 +282,7 @@ function buildDataset() {
   ];
   fusionExecutions.push(...sampleFusion);
 
-  // --------------------------------------------------------------------------
   // 2. Exact Sample OIC Executions from Section 7.2 (OIC2001..OIC2006)
-  // --------------------------------------------------------------------------
   const sampleOic = [
     {
       instance_id: 'OIC2001',
@@ -320,7 +315,7 @@ function buildDataset() {
     {
       instance_id: 'OIC2003',
       integration_id: 'INT03',
-      correlation_id: 'CORR-HCM-20261125-03', // Close in time (~4 mins) to FUS1006 (no matching corr id -> potential match)
+      correlation_id: 'CORR-HCM-20261125-03',
       status: 'FAILED',
       severity: 'Critical',
       start_time: '2026-11-25 10:34:00',
@@ -334,7 +329,7 @@ function buildDataset() {
     {
       instance_id: 'OIC2004',
       integration_id: 'INT04',
-      correlation_id: 'CORR-PROC-20261125-04', // Correlates with FUS1004
+      correlation_id: 'CORR-PROC-20261125-04',
       status: 'SUCCESS',
       severity: 'Low',
       start_time: '2026-11-25 09:33:00',
@@ -348,7 +343,7 @@ function buildDataset() {
     {
       instance_id: 'OIC2005',
       integration_id: 'INT05',
-      correlation_id: 'CORR-SCM-20261125-05', // Exact correlation with FUS1005!
+      correlation_id: 'CORR-SCM-20261125-05',
       status: 'FAILED',
       severity: 'Critical',
       start_time: '2026-11-25 10:07:00',
@@ -376,9 +371,7 @@ function buildDataset() {
   ];
   oicExecutions.push(...sampleOic);
 
-  // --------------------------------------------------------------------------
   // 3. Exact Sample Incidents from Section 7.4 (INC001..INC005)
-  // --------------------------------------------------------------------------
   const sampleIncidents = [
     {
       incident_id: 'INC001',
@@ -478,7 +471,6 @@ function buildDataset() {
   ];
   incidents.push(...sampleIncidents);
 
-  // History for initial 5 incidents
   incidentHistory.push(
     { history_id: 1, incident_id: 'INC001', action: 'CREATED', old_status: null, new_status: 'Open', notes: 'Auto-detected Critical Fusion job failure (FIN-PERIOD)', performed_by: 'monitor-engine', action_time: '2026-11-25 09:12:45' },
     { history_id: 2, incident_id: 'INC002', action: 'CREATED', old_status: null, new_status: 'Open', notes: 'Auto-detected High Fusion job failure (PAY-CUST)', performed_by: 'monitor-engine', action_time: '2026-11-25 09:24:15' },
@@ -492,10 +484,8 @@ function buildDataset() {
     { history_id: 10, incident_id: 'INC005', action: 'STATUS_CHANGED', old_status: 'Open', new_status: 'Investigating', notes: 'Reviewing ISO 20022 payload with Banking gateway team', performed_by: 'vikram.mehta', action_time: '2026-11-25 11:25:00' }
   );
 
-  // --------------------------------------------------------------------------
-  // 4. Generate remaining Fusion executions to reach 125 total (FUS1007..FUS1125)
-  //    Target distribution: ~82% SUCCESS, ~13% FAILED, ~5% RUNNING/WARNING
-  // --------------------------------------------------------------------------
+  // 4. Generate remaining Fusion executions (FUS1007..FUS1125 -> 125 total)
+  //    Target distribution across all 125: ~82% SUCCESS (103), ~13% FAILED (16), ~5% RUNNING/WARNING (6)
   let nextIncNum = 6;
   let nextHistId = 11;
 
@@ -505,26 +495,21 @@ function buildDataset() {
     const minutesBack = Math.floor((126 - idx) * 52 + rng() * 25);
     const startDt = addMinutes(anchor, -minutesBack);
 
-    const roll = rng();
     let status = 'SUCCESS';
     if (idx >= 122) {
-      status = 'RUNNING';
-    } else if (roll < 0.82) {
-      status = 'SUCCESS';
-    } else if (roll < 0.945) {
-      status = 'FAILED';
-    } else if (roll < 0.975) {
-      status = 'WARNING';
-    } else {
-      status = 'RUNNING';
+      status = 'RUNNING'; // 4 running
+    } else if (idx === 119 || idx === 120) {
+      status = 'WARNING'; // 2 warning -> 6 running/warning = 4.8%
+    } else if ([14, 23, 34, 45, 56, 67, 78, 89, 98, 108, 115, 118].includes(idx)) {
+      status = 'FAILED'; // 12 + 4 sample = 16 failed = 12.8%
     }
 
     let severity = 'Low';
     let errorCode = null;
     let errorCategory = null;
     let errorMessage = null;
-    let durationSeconds = status === 'RUNNING' ? null : Math.floor(60 + rng() * 340);
-    let endDt = status === 'RUNNING' ? null : new Date(startDt.getTime() + durationSeconds * 1000);
+    const durationSeconds = status === 'RUNNING' ? null : Math.floor(60 + rng() * 340);
+    const endDt = status === 'RUNNING' ? null : new Date(startDt.getTime() + durationSeconds * 1000);
 
     if (status === 'FAILED') {
       const err = FAILURE_CATALOG[Math.floor(rng() * FAILURE_CATALOG.length)];
@@ -562,7 +547,6 @@ function buildDataset() {
     };
     fusionExecutions.push(row);
 
-    // Create historical incidents for some failed rows (mostly Resolved/Closed so Open stays realistic)
     if (status === 'FAILED' && (severity === 'Critical' || severity === 'High')) {
       const incId = `INC${String(nextIncNum++).padStart(3, '0')}`;
       const isRecent = idx >= 115;
@@ -613,10 +597,8 @@ function buildDataset() {
     }
   }
 
-  // --------------------------------------------------------------------------
-  // 5. Generate remaining OIC executions to reach 90 total (OIC2007..OIC2090)
-  //    Include 2 extra correlated chains with Fusion runs!
-  // --------------------------------------------------------------------------
+  // 5. Generate remaining OIC executions (OIC2007..OIC2090 -> 90 total)
+  //    Target distribution across all 90: ~82.2% SUCCESS (74), ~12.2% FAILED (11), ~5.6% RUNNING/WARNING (5)
   for (let idx = 7; idx <= 90; idx++) {
     const instanceId = `OIC${2000 + idx}`;
     const integ = OIC_INTEGRATIONS[(idx - 1) % OIC_INTEGRATIONS.length];
@@ -624,22 +606,17 @@ function buildDataset() {
     const minutesBack = Math.floor((91 - idx) * 65 + rng() * 30);
     const startDt = addMinutes(anchor, -minutesBack);
 
-    const roll = rng();
     let status = 'SUCCESS';
     if (idx >= 89) {
-      status = 'RUNNING';
-    } else if (roll < 0.83) {
-      status = 'SUCCESS';
-    } else if (roll < 0.95) {
-      status = 'FAILED';
-    } else {
-      status = 'WARNING';
+      status = 'RUNNING'; // 2 running
+    } else if (idx === 83 || idx === 84 || idx === 85) {
+      status = 'WARNING'; // 3 warning -> 5 running/warning = 5.6%
+    } else if ([15, 29, 41, 55, 68, 79, 86].includes(idx)) {
+      status = 'FAILED'; // 7 + 4 sample = 11 failed = 12.2%
     }
 
-    // Link a couple of OIC executions to existing Fusion correlation IDs for rich demo
     let corrId = `CORR-${integ.process_family.slice(0, 3).toUpperCase()}-202611-O${String(idx).padStart(2, '0')}`;
     if (idx === 86) {
-      // Correlate with an actual Fusion failure if present, else FUS1002
       const fusFinFail = fusionExecutions.find((f) => f.status === 'FAILED' && f.execution_id !== 'FUS1002' && f.correlation_id);
       if (fusFinFail) corrId = fusFinFail.correlation_id;
     }
@@ -648,8 +625,8 @@ function buildDataset() {
     let errorCode = null;
     let errorCategory = null;
     let errorMessage = null;
-    let durationSeconds = status === 'RUNNING' ? null : Math.floor(8 + rng() * 65);
-    let endDt = status === 'RUNNING' ? null : new Date(startDt.getTime() + durationSeconds * 1000);
+    const durationSeconds = status === 'RUNNING' ? null : Math.floor(8 + rng() * 65);
+    const endDt = status === 'RUNNING' ? null : new Date(startDt.getTime() + durationSeconds * 1000);
 
     if (status === 'FAILED') {
       const err = FAILURE_CATALOG[Math.floor(rng() * FAILURE_CATALOG.length)];

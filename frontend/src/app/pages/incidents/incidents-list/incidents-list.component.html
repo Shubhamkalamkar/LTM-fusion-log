@@ -46,6 +46,16 @@
       <button class="btn btn-secondary btn-sm" type="button" (click)="resetFilters()">Reset</button>
     }
   </form>
+
+  @if (hasActiveFilters()) {
+    <div class="active-filters">
+      <span>Applied filters:</span>
+      @if (filters.status) { <span class="filter-chip">Status: {{ filters.status }}</span> }
+      @if (filters.severity) { <span class="filter-chip">Severity: {{ filters.severity }}</span> }
+      @if (filters.sourceType) { <span class="filter-chip">Source: {{ filters.sourceType }}</span> }
+      @if (filters.search) { <span class="filter-chip">Search: {{ filters.search }}</span> }
+    </div>
+  }
 </div>
 
 @if (error()) {

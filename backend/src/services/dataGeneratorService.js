@@ -2,7 +2,7 @@
 
 const dashboardRepository = require('../repositories/dashboardRepository');
 const { classifySeverity } = require('./severityService');
-const { FAILURE_CATALOG } = require('../../../database/dataset');
+const { FAILURE_CATALOG } = require('../config/dataset');
 
 function formatUtc(date) {
   return date.toISOString().replace('T', ' ').slice(0, 19);

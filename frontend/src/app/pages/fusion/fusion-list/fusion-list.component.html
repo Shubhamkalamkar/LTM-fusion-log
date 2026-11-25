@@ -88,6 +88,7 @@
             <th class="sortable" (click)="sortBy('job_name')">Job Name</th>
             <th class="sortable" (click)="sortBy('module')">Module</th>
             <th class="sortable" (click)="sortBy('start_time')">Start Time (UTC)</th>
+            <th>End Time (UTC)</th>
             <th class="sortable" (click)="sortBy('duration_seconds')">Duration</th>
             <th class="sortable" (click)="sortBy('status')">Status</th>
             <th class="sortable" (click)="sortBy('severity')">Severity</th>
@@ -103,6 +104,7 @@
               <td><strong>{{ row.job_name }}</strong></td>
               <td>{{ row.module }}</td>
               <td class="mono">{{ row.start_time }}</td>
+              <td class="mono">{{ row.end_time || 'In Progress' }}</td>
               <td>{{ formatDuration(row.duration_seconds) }}</td>
               <td><span [class]="badgeClass(row.status)">{{ row.status }}</span></td>
               <td><span [class]="badgeClass(row.severity)">{{ row.severity }}</span></td>
