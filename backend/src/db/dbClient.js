@@ -9,6 +9,11 @@ const { MemoryAdapter } = require('./memoryAdapter');
 let activeAdapter = null;
 let activeMode = null;
 
+/**
+ * Used by: All repositories (fusionRepository, oicRepository, incidentRepository, dashboardRepository)
+ * across every API endpoint and Lambda handler.
+ * Selects and caches either MySqlAdapter or MemoryAdapter based on DB_MODE ('mysql' | 'memory' | 'auto').
+ */
 async function getDbAdapter() {
   if (activeAdapter) return activeAdapter;
 
@@ -44,10 +49,18 @@ async function getDbAdapter() {
   return activeAdapter;
 }
 
+/**
+ * Used by: GET /dashboard/metadata, GET /dashboard/summary, and GET /health
+ * Returns the active store mode ('mysql' or 'memory') displayed in the UI topbar.
+ */
 function getActiveDbMode() {
   return activeMode || env.dbMode;
 }
 
+/**
+ * Used by: backend/tests/api.test.js (beforeEach hook)
+ * Swaps or resets the cached DB adapter so each unit test runs against clean state.
+ */
 function resetDbAdapterForTest(customAdapter = null, modeName = 'memory') {
   activeAdapter = customAdapter;
   activeMode = customAdapter ? modeName : null;

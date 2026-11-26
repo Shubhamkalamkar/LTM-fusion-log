@@ -14,7 +14,6 @@ flowchart LR
 
     L1 & L2 & L3 & L4 & L5 -->|"SQL / Connection Pool (RDS Proxy)"| RDS[("Amazon RDS for MySQL")]
     L1 & L2 & L3 & L4 & L5 -->|"Structured JSON Logs"| CW["Amazon CloudWatch"]
-    L1 & L2 & L3 & L4 -.->|"Optional Secret Lookup"| SM["AWS Secrets Manager"]
 ```
 
 ## 2. Entity-Relationship Model

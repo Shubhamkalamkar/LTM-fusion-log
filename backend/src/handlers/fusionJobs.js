@@ -23,12 +23,19 @@ const FUSION_CSV_COLUMNS = [
   { key: 'incident_id', label: 'Incident ID' }
 ];
 
+/**
+ * AWS Lambda Handler: FusionJobsLambda
+ * Routes handled:
+ *  - GET /fusion/jobs/{executionId} -> Single Fusion execution detail + correlation chain
+ *  - GET /fusion/jobs/failed        -> Failed Fusion executions (JSON or CSV)
+ *  - GET /fusion/jobs               -> Filtered, sorted, paginated Fusion executions (JSON or CSV)
+ */
 const handler = withLambdaGuard('FusionJobsLambda', async (event) => {
   const path = event.path || '/fusion/jobs';
   const query = event.queryStringParameters || {};
   const pathParams = event.pathParameters || {};
 
-  // GET /fusion/jobs/{executionId}
+  // Route: GET /fusion/jobs/{executionId} (single Fusion execution detail + correlation)
   if (pathParams.executionId) {
     const executionId = assertValidId(pathParams.executionId, 'executionId');
     const detail = await fusionService.getFusionExecutionDetail(executionId);
@@ -37,17 +44,19 @@ const handler = withLambdaGuard('FusionJobsLambda', async (event) => {
 
   const filters = validateExecutionFilters(query, { module: true, jobName: true });
 
-  // GET /fusion/jobs/failed
+  // Route: GET /fusion/jobs/failed (forces status = 'FAILED' filter)
   if (path.endsWith('/failed')) {
     filters.status = 'FAILED';
   }
 
+  // Route: GET /fusion/jobs?format=csv OR /fusion/jobs/failed?format=csv (downloads all matching rows as CSV)
   if (filters.format === 'csv') {
     const result = await fusionService.listFusionExecutions({ ...filters, all: true });
     const csv = toCsv(result.items, FUSION_CSV_COLUMNS);
     return csvResponse('fusion-executions.csv', csv);
   }
 
+  // Route: GET /fusion/jobs (and /fusion/jobs/failed) returning paginated JSON results
   const result = await fusionService.listFusionExecutions(filters);
   return ok({
     items: result.items,

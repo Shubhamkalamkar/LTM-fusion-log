@@ -30,13 +30,21 @@ const INCIDENT_CSV_COLUMNS = [
   { key: 'last_retry_at', label: 'Last Retry At (UTC)' }
 ];
 
+/**
+ * AWS Lambda Handler: IncidentsLambda
+ * Routes handled:
+ *  - PUT  /incidents/{incidentId}/status -> Update incident status & log audit history
+ *  - POST /incidents/{incidentId}/retry  -> Simulate retry, increment retry_count & log history
+ *  - GET  /incidents/{incidentId}        -> Single incident detail + correlation chain + history
+ *  - GET  /incidents                     -> Filtered, paginated incident list (JSON or CSV)
+ */
 const handler = withLambdaGuard('IncidentsLambda', async (event) => {
   const method = (event.httpMethod || 'GET').toUpperCase();
   const path = event.path || '/incidents';
   const query = event.queryStringParameters || {};
   const pathParams = event.pathParameters || {};
 
-  // PUT /incidents/{incidentId}/status
+  // Route: PUT /incidents/{incidentId}/status (update status & record STATUS_CHANGED history)
   if (method === 'PUT' && path.endsWith('/status')) {
     const incidentId = assertValidId(pathParams.incidentId, 'incidentId');
     const body = parseJsonBody(event);
@@ -51,7 +59,7 @@ const handler = withLambdaGuard('IncidentsLambda', async (event) => {
     return ok(updated);
   }
 
-  // POST /incidents/{incidentId}/retry
+  // Route: POST /incidents/{incidentId}/retry (simulate retry without resubmitting real Oracle job)
   if (method === 'POST' && path.endsWith('/retry')) {
     const incidentId = assertValidId(pathParams.incidentId, 'incidentId');
     const body = parseJsonBody(event);
@@ -62,14 +70,14 @@ const handler = withLambdaGuard('IncidentsLambda', async (event) => {
     return ok(updated);
   }
 
-  // GET /incidents/{incidentId}
+  // Route: GET /incidents/{incidentId} (incident details, source execution, correlation & audit trail)
   if (method === 'GET' && pathParams.incidentId) {
     const incidentId = assertValidId(pathParams.incidentId, 'incidentId');
     const detail = await incidentService.getIncidentDetail(incidentId);
     return ok(detail);
   }
 
-  // GET /incidents
+  // Route: GET /incidents (filtered list as CSV or paginated JSON)
   if (method === 'GET') {
     const pagination = validatePagination(query);
     const filters = {
@@ -82,6 +90,7 @@ const handler = withLambdaGuard('IncidentsLambda', async (event) => {
       ...pagination
     };
 
+    // Route: GET /incidents?format=csv (export all matching incidents as CSV)
     if (filters.format === 'csv') {
       const result = await incidentService.listIncidents({ ...filters, all: true });
       const csv = toCsv(result.items, INCIDENT_CSV_COLUMNS);

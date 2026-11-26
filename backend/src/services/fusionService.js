@@ -4,10 +4,19 @@ const fusionRepository = require('../repositories/fusionRepository');
 const correlationService = require('./correlationService');
 const { AppError } = require('../utils/response');
 
+/**
+ * Business Service used by: FusionJobsLambda -> GET /fusion/jobs & GET /fusion/jobs/failed
+ * Retrieves filtered, sorted, and paginated Oracle Fusion job executions.
+ */
 async function listFusionExecutions(filters) {
   return fusionRepository.listExecutions(filters);
 }
 
+/**
+ * Business Service used by: FusionJobsLambda -> GET /fusion/jobs/{executionId}
+ * Fetches one Fusion job execution (throws 404 if missing) and attaches its end-to-end
+ * Fusion -> OIC -> Downstream correlation context.
+ */
 async function getFusionExecutionDetail(executionId) {
   const exec = await fusionRepository.getExecutionById(executionId);
   if (!exec) {

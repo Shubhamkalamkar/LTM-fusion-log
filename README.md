@@ -17,7 +17,7 @@ A serverless operations-monitoring prototype built with **Angular 20**, **Node.j
 │   │   │   ├── env.js                  # DB mode, MySQL/RDS & correlation window config
 │   │   │   └── severityRules.json      # Configurable severity rules (fallback to DB table)
 │   │   ├── db/
-│   │   │   ├── pool.js                 # MySQL2 pool with Lambda reuse & Secrets Manager hook
+│   │   │   ├── pool.js                 # MySQL2 connection pool with Lambda reuse
 │   │   │   ├── mysqlAdapter.js         # Parameterized SQL queries & transactions
 │   │   │   ├── memoryAdapter.js        # Zero-DB in-memory fallback using the same dataset
 │   │   │   └── dbClient.js             # Auto-selects MySQL or in-memory store
@@ -132,8 +132,7 @@ npm test
 ## 5. AWS Deployment (SAM + RDS + S3/CloudFront)
 
 1. Provision Amazon RDS for MySQL 8.0 and run `database/schema.sql` followed by `database/seed.sql`.
-2. Store RDS credentials in AWS Secrets Manager (optional) and note the Secret ARN.
-3. Build and deploy the full AWS stack (API Gateway + 5 Lambdas + Private S3 Bucket + CloudFront OAC Distribution):
+2. Build and deploy the full AWS stack (API Gateway + 5 Lambdas + Private S3 Bucket + CloudFront OAC Distribution), passing `DbHost`, `DbUser`, and `DbPassword` during `sam deploy`:
    ```powershell
    sam build -t infrastructure/template.yaml
    sam deploy --guided

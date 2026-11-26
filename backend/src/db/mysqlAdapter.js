@@ -3,6 +3,10 @@
 const { getPool } = require('./pool');
 const { AppError } = require('../utils/response');
 
+/**
+ * Helper used by: GET /fusion/jobs, GET /oic/integrations, GET /dashboard/summary
+ * Converts a YYYY-MM-DD date string into start-of-day (00:00:00) or end-of-day (23:59:59) UTC bounds.
+ */
 function normalizeDateBound(val, isEnd = false) {
   if (!val) return null;
   if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
@@ -11,10 +15,19 @@ function normalizeDateBound(val, isEnd = false) {
   return val.replace('T', ' ').slice(0, 19);
 }
 
+/**
+ * Helper used by: PUT /incidents/{incidentId}/status, POST /incidents/{incidentId}/retry
+ * Returns the current UTC timestamp formatted for MySQL DATETIME ('YYYY-MM-DD HH:MM:SS').
+ */
 function nowTimestamp() {
   return new Date().toISOString().replace('T', ' ').slice(0, 19);
 }
 
+/**
+ * Helper used by: All read methods in MySqlAdapter
+ * Executes a parameterized SQL statement on the pooled MySQL connection and maps
+ * timeout/connection-refused failures to a controlled HTTP 503 AppError.
+ */
 async function query(sql, params = []) {
   try {
     const pool = await getPool();
@@ -28,7 +41,19 @@ async function query(sql, params = []) {
   }
 }
 
+/**
+ * MySQL / Amazon RDS Data Adapter.
+ * Implements the shared database contract using parameterized mysql2 queries and transactions.
+ * Automatically selected by dbClient.js when DB_MODE=mysql (or DB_MODE=auto and MySQL is reachable).
+ */
 class MySqlAdapter {
+  /**
+   * Used by:
+   *  - GET /dashboard/metadata (DashboardLambda)
+   *  - GET /dashboard/summary (DashboardLambda -> availableModules list)
+   *  - POST /simulator/tick & EventBridge schedule (DataGeneratorLambda)
+   * Fetches master reference data (modules, OIC sources, downstream systems, Fusion jobs, OIC integrations).
+   */
   async getMetadata() {
     const [modulesRows, sourcesRows, downstreamSystems, fusionJobs, oicIntegrations] = await Promise.all([
       query('SELECT DISTINCT module FROM fusion_jobs ORDER BY module'),
@@ -47,10 +72,21 @@ class MySqlAdapter {
     };
   }
 
+  /**
+   * Used by: POST /simulator/tick & EventBridge schedule (DataGeneratorLambda -> severityService)
+   * Loads severity classification rules ordered by priority from the severity_rules config table.
+   */
   async getSeverityRules() {
     return query('SELECT * FROM severity_rules ORDER BY priority ASC');
   }
 
+  /**
+   * Used by:
+   *  - GET /fusion/jobs (FusionJobsLambda, including ?format=csv)
+   *  - GET /fusion/jobs/failed (FusionJobsLambda)
+   *  - GET /dashboard/summary (DashboardLambda, with all: true)
+   * Filters, sorts, and paginates Fusion job executions joined with fusion_jobs and failure_incidents.
+   */
   async listFusionExecutions(filters = {}) {
     const where = ['1=1'];
     const params = [];
@@ -124,6 +160,12 @@ class MySqlAdapter {
     return { items, total };
   }
 
+  /**
+   * Used by:
+   *  - GET /fusion/jobs/{executionId} (FusionJobsLambda)
+   *  - GET /incidents/{incidentId} (IncidentsLambda, when source_type === 'FUSION')
+   * Retrieves a single Fusion job execution along with its job metadata and linked incident ID.
+   */
   async getFusionExecutionById(executionId) {
     const rows = await query(
       `SELECT e.*, j.job_name, j.ess_job_definition, j.module, j.process_family,
@@ -137,6 +179,13 @@ class MySqlAdapter {
     return rows[0] || null;
   }
 
+  /**
+   * Used by:
+   *  - GET /oic/integrations (OicIntegrationsLambda, including ?format=csv)
+   *  - GET /oic/integrations/failed (OicIntegrationsLambda)
+   *  - GET /dashboard/summary (DashboardLambda, with all: true)
+   * Filters, sorts, and paginates OIC executions joined with oic_integrations, downstream_systems, and failure_incidents.
+   */
   async listOicExecutions(filters = {}) {
     const where = ['1=1'];
     const params = [];
@@ -221,6 +270,12 @@ class MySqlAdapter {
     return { items, total };
   }
 
+  /**
+   * Used by:
+   *  - GET /oic/integrations/{instanceId} (OicIntegrationsLambda)
+   *  - GET /incidents/{incidentId} (IncidentsLambda, when source_type === 'OIC')
+   * Retrieves a single OIC integration instance along with downstream target info and linked incident ID.
+   */
   async getOicExecutionById(instanceId) {
     const rows = await query(
       `SELECT e.*, i.integration_name, i.integration_code, i.source_system, i.target_system_id, i.process_family,
@@ -236,6 +291,11 @@ class MySqlAdapter {
     return rows[0] || null;
   }
 
+  /**
+   * Used by: GET /dashboard/summary (DashboardLambda)
+   * Fetches filtered Fusion runs, OIC runs, incidents, and downstream systems in parallel
+   * so dashboardService can compute KPIs, success rates, critical failures, and system health.
+   */
   async getDashboardSummary(filters = {}) {
     const [fusionRes, oicRes, incRes, downstreamSystems] = await Promise.all([
       this.listFusionExecutions({ ...filters, all: true }),
@@ -251,6 +311,12 @@ class MySqlAdapter {
     };
   }
 
+  /**
+   * Used by:
+   *  - GET /incidents (IncidentsLambda, including ?format=csv)
+   *  - GET /dashboard/summary (DashboardLambda, with all: true)
+   * Filters and paginates failure_incidents joined with downstream_systems, newest first.
+   */
   async listIncidents(filters = {}) {
     const where = ['1=1'];
     const params = [];
@@ -297,6 +363,13 @@ class MySqlAdapter {
     return { items, total };
   }
 
+  /**
+   * Used by:
+   *  - GET /incidents/{incidentId} (IncidentsLambda)
+   *  - PUT /incidents/{incidentId}/status (IncidentsLambda, pre-check & post-update fetch)
+   *  - POST /incidents/{incidentId}/retry (IncidentsLambda, pre-check & post-retry fetch)
+   * Retrieves a single incident plus its full chronological incident_history audit trail.
+   */
   async getIncidentById(incidentId) {
     const rows = await query(
       `SELECT fi.*, d.system_name AS downstream_system_name, d.system_type AS downstream_system_type, d.criticality AS downstream_criticality
@@ -313,6 +386,11 @@ class MySqlAdapter {
     return { ...rows[0], history };
   }
 
+  /**
+   * Used by: PUT /incidents/{incidentId}/status (IncidentsLambda)
+   * Inside a DB transaction: locks the incident row, updates status/acknowledged_by,
+   * inserts a STATUS_CHANGED audit row into incident_history, and returns the updated incident.
+   */
   async updateIncidentStatus(incidentId, newStatus, { notes, performedBy } = {}) {
     const pool = await getPool();
     const conn = await pool.getConnection();
@@ -343,6 +421,11 @@ class MySqlAdapter {
     return this.getIncidentById(incidentId);
   }
 
+  /**
+   * Used by: POST /incidents/{incidentId}/retry (IncidentsLambda)
+   * Inside a DB transaction: increments retry_count on both failure_incidents and its source
+   * Fusion/OIC execution, sets status to 'Retry Initiated', sets last_retry_at, and logs RETRY_SIMULATED history.
+   */
   async retryIncident(incidentId, { notes, performedBy } = {}) {
     const pool = await getPool();
     const conn = await pool.getConnection();
@@ -382,6 +465,14 @@ class MySqlAdapter {
     return this.getIncidentById(incidentId);
   }
 
+  /**
+   * Used by:
+   *  - GET /fusion/jobs/{executionId} (FusionJobsLambda -> correlationService)
+   *  - GET /oic/integrations/{instanceId} (OicIntegrationsLambda -> correlationService)
+   *  - GET /incidents/{incidentId} (IncidentsLambda -> correlationService)
+   * Queries exact correlation_id matches across Fusion & OIC tables, plus nearby same-process-family
+   * runs within windowMinutes for potential time-window relationship matching.
+   */
   async findCorrelatedExecutions({ correlationId, sourceType, processFamily, referenceTime, windowMinutes }) {
     const exactFusion = correlationId
       ? await query(
@@ -431,6 +522,11 @@ class MySqlAdapter {
     return { exactFusion, exactOic, nearbyFusion, nearbyOic, sourceType };
   }
 
+  /**
+   * Used by: POST /simulator/tick & EventBridge 5-min schedule (DataGeneratorLambda)
+   * Inside a DB transaction: inserts a simulated Fusion or OIC execution and, if a failure
+   * triggers an incident, inserts into failure_incidents and incident_history.
+   */
   async insertSimulatedExecution({ sourceType, execution, incident }) {
     const pool = await getPool();
     const conn = await pool.getConnection();
@@ -470,6 +566,10 @@ class MySqlAdapter {
     return { execution, incident };
   }
 
+  /**
+   * Used by: POST /simulator/tick & EventBridge schedule (DataGeneratorLambda)
+   * Computes the next sequential IDs (FUSxxxx, OICxxxx, INCxxx) from current MySQL max values.
+   */
   async getNextIds() {
     const [fRows, oRows, iRows] = await Promise.all([
       query("SELECT COALESCE(MAX(CAST(SUBSTRING(execution_id, 4) AS UNSIGNED)), 1000) AS max_id FROM fusion_job_executions WHERE execution_id REGEXP '^FUS[0-9]+$'"),

@@ -4,14 +4,18 @@ const dashboardRepository = require('../repositories/dashboardRepository');
 const { classifySeverity } = require('./severityService');
 const { FAILURE_CATALOG } = require('../config/dataset');
 
+/**
+ * Helper used by: generateSimulatedEvent()
+ * Formats a JS Date object as a UTC DATETIME string ('YYYY-MM-DD HH:MM:SS').
+ */
 function formatUtc(date) {
   return date.toISOString().replace('T', ' ').slice(0, 19);
 }
 
 /**
- * Generates a realistic simulated Fusion or OIC execution event.
- * Invoked by the scheduled Data Generator Lambda (EventBridge every 1-5 mins)
- * or manually from the UI "Simulate Event" trigger.
+ * Business Service used by: DataGeneratorLambda -> POST /simulator/tick & EventBridge 5-min schedule
+ * Generates a realistic simulated Fusion or OIC execution event, classifies its severity via
+ * severityService, auto-creates an incident for failures when rules require it, and persists both.
  */
 async function generateSimulatedEvent(options = {}) {
   const meta = await dashboardRepository.getMetadata();

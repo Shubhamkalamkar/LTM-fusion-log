@@ -8,10 +8,21 @@ const { AppError } = require('../utils/response');
 
 const NON_RETRYABLE_STATUSES = ['Resolved', 'Closed'];
 
+/**
+ * Business Service used by: IncidentsLambda -> GET /incidents
+ * Retrieves filtered and paginated failure incidents.
+ */
 async function listIncidents(filters) {
   return incidentRepository.listIncidents(filters);
 }
 
+/**
+ * Business Service used by:
+ *  - IncidentsLambda -> GET /incidents/{incidentId}
+ *  - updateIncidentStatus() & retryIncident() (returns refreshed full view)
+ * Loads the incident (404 if missing), its source Fusion/OIC execution, audit history,
+ * and end-to-end correlation chain + business impact statement.
+ */
 async function getIncidentDetail(incidentId) {
   const incident = await incidentRepository.getIncidentById(incidentId);
   if (!incident) {
@@ -50,6 +61,11 @@ async function getIncidentDetail(incidentId) {
   };
 }
 
+/**
+ * Business Service used by: IncidentsLambda -> PUT /incidents/{incidentId}/status
+ * Validates incident existence (404) and prevents redundant no-op status transitions (400),
+ * updates status + audit history, and returns the refreshed incident detail.
+ */
 async function updateIncidentStatus(incidentId, newStatus, meta = {}) {
   const existing = await incidentRepository.getIncidentById(incidentId);
   if (!existing) {
@@ -62,6 +78,11 @@ async function updateIncidentStatus(incidentId, newStatus, meta = {}) {
   return getIncidentDetail(incidentId);
 }
 
+/**
+ * Business Service used by: IncidentsLambda -> POST /incidents/{incidentId}/retry
+ * Validates incident exists (404) and is retryable (rejects Resolved/Closed with 400),
+ * simulates retry (never resubmits real Oracle jobs), and returns refreshed incident detail.
+ */
 async function retryIncident(incidentId, meta = {}) {
   const existing = await incidentRepository.getIncidentById(incidentId);
   if (!existing) {

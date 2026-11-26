@@ -25,12 +25,19 @@ const OIC_CSV_COLUMNS = [
   { key: 'incident_id', label: 'Incident ID' }
 ];
 
+/**
+ * AWS Lambda Handler: OicIntegrationsLambda
+ * Routes handled:
+ *  - GET /oic/integrations/{instanceId} -> Single OIC instance detail + downstream impact + correlation
+ *  - GET /oic/integrations/failed       -> Failed OIC instances (JSON or CSV)
+ *  - GET /oic/integrations              -> Filtered, sorted, paginated OIC instances (JSON or CSV)
+ */
 const handler = withLambdaGuard('OicIntegrationsLambda', async (event) => {
   const path = event.path || '/oic/integrations';
   const query = event.queryStringParameters || {};
   const pathParams = event.pathParameters || {};
 
-  // GET /oic/integrations/{instanceId}
+  // Route: GET /oic/integrations/{instanceId} (single OIC instance detail + correlation)
   if (pathParams.instanceId) {
     const instanceId = assertValidId(pathParams.instanceId, 'instanceId');
     const detail = await oicService.getOicExecutionDetail(instanceId);
@@ -39,17 +46,19 @@ const handler = withLambdaGuard('OicIntegrationsLambda', async (event) => {
 
   const filters = validateExecutionFilters(query, { source: true, target: true, integration: true });
 
-  // GET /oic/integrations/failed
+  // Route: GET /oic/integrations/failed (forces status = 'FAILED' filter)
   if (path.endsWith('/failed')) {
     filters.status = 'FAILED';
   }
 
+  // Route: GET /oic/integrations?format=csv OR /oic/integrations/failed?format=csv (CSV export)
   if (filters.format === 'csv') {
     const result = await oicService.listOicExecutions({ ...filters, all: true });
     const csv = toCsv(result.items, OIC_CSV_COLUMNS);
     return csvResponse('oic-integrations.csv', csv);
   }
 
+  // Route: GET /oic/integrations (and /oic/integrations/failed) returning paginated JSON results
   const result = await oicService.listOicExecutions(filters);
   return ok({
     items: result.items,

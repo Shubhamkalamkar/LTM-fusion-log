@@ -4,7 +4,9 @@ const rulesConfig = require('../config/severityRules.json');
 const dashboardRepository = require('../repositories/dashboardRepository');
 
 /**
- * Classifies execution severity using configured rules (DB table or JSON fallback).
+ * Business Service used by: dataGeneratorService.generateSimulatedEvent() -> POST /simulator/tick & EventBridge schedule
+ * Classifies execution severity (Critical/High/Medium/Low) and determines whether an incident
+ * should be auto-created using configured rules from DB (severity_rules) or JSON fallback.
  */
 async function classifySeverity({ sourceType, status, errorCategory, moduleOrFamily, targetCriticality, defaultSeverity }) {
   if (status === 'SUCCESS' || status === 'RUNNING' || status === 'WARNING') {

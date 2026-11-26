@@ -29,7 +29,7 @@ Follow these steps in exact order to deploy the **Oracle Fusion Cloud & OIC Job 
    - **Templates**: `Free tier` (or `Dev/Test`)
    - **DB instance identifier**: `oracle-monitoring-db`
    - **Master username**: `admin` (or `monitor_app`)
-   - **Credentials management**: Select **Managed in AWS Secrets Manager** *(recommended — automatically creates a Secret ARN)* or **Self managed** (note down your password).
+   - **Credentials management**: Select **Self managed** and enter your master password (note down username and password).
    - **Additional configuration → Initial database name**: `oracle_monitoring`
    - **Connectivity → Public access**: `Yes` *(if you want to connect from your laptop's MySQL Workbench; restrict Inbound Rule to your IP!)*.
 3. Click **Create database** and wait until status becomes **Available**.
@@ -38,8 +38,7 @@ Follow these steps in exact order to deploy the **Oracle Fusion Cloud & OIC Job 
    - Click its **VPC security group** → **Edit inbound rules** → ensure **MYSQL/Aurora (TCP 3306)** allows:
      - Your current IP (for MySQL Workbench setup), and
      - Lambda access (either the Lambda Security Group if Lambdas are in the same VPC, or `0.0.0.0/0` temporarily for public RDS testing only).
-5. If you chose **Managed in AWS Secrets Manager**, open **AWS Secrets Manager → Secrets**, click the RDS secret, and copy its **Secret ARN**.
-6. Open **MySQL Workbench 8.0** on your PC → create a connection to the RDS Endpoint (`port 3306`, username/password from step 2):
+5. Open **MySQL Workbench 8.0** on your PC → create a connection to the RDS Endpoint (`port 3306`, username/password from step 2):
    - Open and execute `database/schema.sql`.
    - Open and execute `database/seed.sql`.
    - Verify tables and counts (`125` rows in `fusion_job_executions`, `90` in `oic_integration_executions`, `20` in `failure_incidents`).
@@ -75,34 +74,17 @@ Repeat Steps 1–5 for each of the **5 functions** listed in the table below.
    - Go to **Configuration → Environment variables → Edit** and add:
      - **If using In-Memory mode (no RDS):**
        - `DB_MODE` = `memory`
-     - **If using RDS MySQL (with Secrets Manager):**
+     - **If using RDS MySQL:**
        - `DB_MODE` = `mysql`
        - `DB_HOST` = `<your-rds-endpoint>`
        - `DB_PORT` = `3306`
        - `DB_NAME` = `oracle_monitoring`
-       - `DB_SECRET_ARN` = `<your-secret-arn>`
+       - `DB_USER` = `<your-rds-username>`
+       - `DB_PASSWORD` = `<your-rds-password>`
        - `CORRELATION_WINDOW_MINUTES` = `15`
-     - **If using RDS MySQL (with direct env credentials instead of Secrets Manager):**
-       - Same as above, replacing `DB_SECRET_ARN` with `DB_USER` and `DB_PASSWORD`.
-5. **IAM Permission for Secrets Manager** *(only if using `DB_SECRET_ARN`)*:
-   - Go to **Configuration → Permissions** → click the **Role name**.
-   - In IAM Console → **Add permissions → Create inline policy** → JSON:
-     ```json
-     {
-       "Version": "2012-10-17",
-       "Statement": [
-         {
-           "Effect": "Allow",
-           "Action": "secretsmanager:GetSecretValue",
-           "Resource": "<your-secret-arn>"
-         }
-       ]
-     }
-     ```
-   - Save policy (you can attach this same policy to the roles of all 5 Lambdas, or reuse one IAM execution role across all 5 Lambdas).
-6. *(Only if RDS is in a private VPC without public access)*:
+5. *(Only if RDS is in a private VPC without public access)*:
    - Go to **Configuration → VPC → Edit** and select the same VPC, private subnets, and Lambda security group allowed by RDS port `3306`.
-7. **Quick Lambda Smoke Test**:
+6. **Quick Lambda Smoke Test**:
    - On `oracle-monitor-dashboard` → **Test** tab → create test event `{ "httpMethod": "GET", "path": "/dashboard/summary" }` → click **Test** → verify `"statusCode": 200`.
 
 ---

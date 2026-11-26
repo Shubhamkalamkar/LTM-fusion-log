@@ -12,7 +12,6 @@ module.exports = {
     connectionLimit: Number(process.env.DB_POOL_LIMIT || 10),
     connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT_MS || 4000)
   },
-  secretsManagerSecretId: process.env.DB_SECRET_ARN || '',
   correlationTimeWindowMinutes: Number(process.env.CORRELATION_WINDOW_MINUTES || 15),
   logLevel: process.env.LOG_LEVEL || 'INFO'
 };

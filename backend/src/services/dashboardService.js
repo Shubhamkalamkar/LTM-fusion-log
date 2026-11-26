@@ -2,11 +2,20 @@
 
 const dashboardRepository = require('../repositories/dashboardRepository');
 
+/**
+ * Helper used by: getDashboardSummary()
+ * Computes a 1-decimal success rate percentage while excluding still-running jobs from the denominator.
+ */
 function pct(successCount, totalFinished) {
   if (!totalFinished) return 100.0;
   return Number(((successCount / totalFinished) * 100).toFixed(1));
 }
 
+/**
+ * Business Service used by: DashboardLambda -> GET /dashboard/summary
+ * Aggregates Fusion/OIC execution counts, success rates, critical failure count, open incident count,
+ * top 10 recent failures, per-downstream-system health status, and root-cause category breakdown.
+ */
 async function getDashboardSummary(filters = {}) {
   const { fusion, oic, incidents, downstreamSystems } = await dashboardRepository.getSummaryDataset(filters);
 

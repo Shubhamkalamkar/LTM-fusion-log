@@ -1,0 +1,161 @@
+{
+  "info": {
+    "name": "Oracle Monitoring - Core 10 APIs (Spec Section 10)",
+    "_postman_id": "9fe294b8-064c-4aa3-bf47-oracle-core10",
+    "description": "Minimal Postman Collection v2.1 containing strictly the 10 REST APIs specified in Section 10 of the assignment.\n\nSwitch `baseUrl` collection variable between:\n- Local Express Runner: http://localhost:3000/api (or http://localhost:3000)\n- AWS API Gateway: https://<api-id>.execute-api.<region>.amazonaws.com/prod",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. GET /fusion/jobs - List Fusion Executions",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/fusion/jobs?page=1&limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["fusion", "jobs"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "20" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2. GET /fusion/jobs/failed - List Failed Fusion Executions",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/fusion/jobs/failed",
+          "host": ["{{baseUrl}}"],
+          "path": ["fusion", "jobs", "failed"]
+        }
+      }
+    },
+    {
+      "name": "3. GET /fusion/jobs/{executionId} - Get One Fusion Execution",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/fusion/jobs/FUS1002",
+          "host": ["{{baseUrl}}"],
+          "path": ["fusion", "jobs", "FUS1002"]
+        }
+      }
+    },
+    {
+      "name": "4. GET /oic/integrations - List OIC Executions",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/oic/integrations?page=1&limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["oic", "integrations"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "20" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "5. GET /oic/integrations/failed - List Failed OIC Executions",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/oic/integrations/failed",
+          "host": ["{{baseUrl}}"],
+          "path": ["oic", "integrations", "failed"]
+        }
+      }
+    },
+    {
+      "name": "6. GET /oic/integrations/{instanceId} - Get One OIC Execution",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/oic/integrations/OIC2006",
+          "host": ["{{baseUrl}}"],
+          "path": ["oic", "integrations", "OIC2006"]
+        }
+      }
+    },
+    {
+      "name": "7. GET /dashboard/summary - Dashboard KPI Metrics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/dashboard/summary",
+          "host": ["{{baseUrl}}"],
+          "path": ["dashboard", "summary"]
+        }
+      }
+    },
+    {
+      "name": "8. GET /incidents - List Incidents",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/incidents?page=1&limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["incidents"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "20" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "9. PUT /incidents/{incidentId}/status - Update Incident Status",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"Investigating\",\n  \"performedBy\": \"ops-engineer\",\n  \"notes\": \"Investigating closed accounting period\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/incidents/INC001/status",
+          "host": ["{{baseUrl}}"],
+          "path": ["incidents", "INC001", "status"]
+        }
+      }
+    },
+    {
+      "name": "10. POST /incidents/{incidentId}/retry - Simulate Incident Retry",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"performedBy\": \"ops-engineer\",\n  \"notes\": \"Simulated retry from Postman\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/incidents/INC005/retry",
+          "host": ["{{baseUrl}}"],
+          "path": ["incidents", "INC005", "retry"]
+        }
+      }
+    }
+  ]
+}

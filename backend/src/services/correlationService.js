@@ -11,10 +11,15 @@ const FAMILY_IMPACT_MAP = {
 };
 
 /**
- * Resolves end-to-end correlation across Fusion Jobs, OIC Integrations, and Downstream Systems.
- * Rule 1: Match exact correlation_id first ("Exact Correlation").
- * Rule 2: Optionally correlate by process_family within a configurable time window,
- *         explicitly labeled "Potential Relationship" without claiming causation.
+ * Business Service used by:
+ *  - fusionService.getFusionExecutionDetail() -> GET /fusion/jobs/{executionId}
+ *  - oicService.getOicExecutionDetail()     -> GET /oic/integrations/{instanceId}
+ *  - incidentService.getIncidentDetail()    -> GET /incidents/{incidentId}
+ *
+ * Resolves end-to-end correlation across Fusion Jobs, OIC Integrations, and Downstream Systems:
+ *  - Rule 1: Match exact correlation_id first ("Exact Correlation").
+ *  - Rule 2: Optionally correlate by process_family within a configurable time window,
+ *            explicitly labeled "Potential Relationship (Time-Window)" without claiming causation.
  */
 async function buildCorrelationContext({ correlationId, sourceType, processFamily, referenceTime }) {
   const windowMinutes = env.correlationTimeWindowMinutes;

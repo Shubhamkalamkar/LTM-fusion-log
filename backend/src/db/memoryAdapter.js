@@ -2,6 +2,10 @@
 
 const { buildDataset } = require('../config/dataset');
 
+/**
+ * Helper used by: GET /fusion/jobs, GET /oic/integrations, GET /dashboard/summary
+ * Converts a YYYY-MM-DD date string into start-of-day (00:00:00) or end-of-day (23:59:59) UTC bounds.
+ */
 function normalizeDateBound(val, isEnd = false) {
   if (!val) return null;
   if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
@@ -10,15 +14,33 @@ function normalizeDateBound(val, isEnd = false) {
   return val.replace('T', ' ').slice(0, 19);
 }
 
+/**
+ * Helper used by: PUT /incidents/{incidentId}/status, POST /incidents/{incidentId}/retry
+ * Returns the current UTC timestamp formatted as 'YYYY-MM-DD HH:MM:SS'.
+ */
 function nowTimestamp() {
   return new Date().toISOString().replace('T', ' ').slice(0, 19);
 }
 
+/**
+ * In-Memory Zero-DB Data Adapter.
+ * Implements the exact same method contract as MySqlAdapter over an in-memory copy of dataset.js.
+ * Selected by dbClient.js when DB_MODE=memory, when DB_MODE=auto and MySQL is unreachable,
+ * or during unit tests (backend/tests/api.test.js).
+ */
 class MemoryAdapter {
+  /**
+   * Used by: dbClient.js & backend/tests/api.test.js
+   * Seeds the in-memory store with fresh simulated data on instantiation.
+   */
   constructor() {
     this.reset();
   }
 
+  /**
+   * Used by: MemoryAdapter constructor & unit tests
+   * Reloads clean in-memory arrays (125 Fusion, 90 OIC, 6 downstream systems, 20 incidents) from dataset.js.
+   */
   reset() {
     const data = buildDataset();
     this.severityRules = data.SEVERITY_RULES;
@@ -31,6 +53,10 @@ class MemoryAdapter {
     this.incidentHistory = data.incidentHistory;
   }
 
+  /**
+   * Internal helper used by: listFusionExecutions, getFusionExecutionById, getDashboardSummary, findCorrelatedExecutions
+   * Simulates SQL JOINs by attaching job_name, module, process_family, and linked incident_id to a Fusion execution row.
+   */
   _enrichFusion(row) {
     const job = this.fusionJobs.find((j) => j.job_id === row.job_id) || {};
     const incident = this.incidents.find(
@@ -47,6 +73,10 @@ class MemoryAdapter {
     };
   }
 
+  /**
+   * Internal helper used by: listOicExecutions, getOicExecutionById, getDashboardSummary, findCorrelatedExecutions
+   * Simulates SQL JOINs by attaching integration metadata, downstream target system details, and linked incident_id.
+   */
   _enrichOic(row) {
     const integ = this.oicIntegrations.find((i) => i.integration_id === row.integration_id) || {};
     const target = this.downstreamSystems.find((s) => s.system_id === integ.target_system_id) || {};
@@ -68,6 +98,10 @@ class MemoryAdapter {
     };
   }
 
+  /**
+   * Internal helper used by: listIncidents, getIncidentById, getDashboardSummary
+   * Simulates SQL LEFT JOIN on downstream_systems to attach target system name, type, and criticality to an incident.
+   */
   _enrichIncident(row) {
     const target = row.downstream_system_id
       ? this.downstreamSystems.find((s) => s.system_id === row.downstream_system_id)
@@ -80,6 +114,13 @@ class MemoryAdapter {
     };
   }
 
+  /**
+   * Used by:
+   *  - GET /dashboard/metadata (DashboardLambda)
+   *  - GET /dashboard/summary (DashboardLambda -> availableModules list)
+   *  - POST /simulator/tick & EventBridge schedule (DataGeneratorLambda)
+   * Returns master reference lists (modules, OIC sources, downstream systems, Fusion jobs, OIC integrations).
+   */
   async getMetadata() {
     return {
       mode: 'memory',
@@ -91,10 +132,20 @@ class MemoryAdapter {
     };
   }
 
+  /**
+   * Used by: POST /simulator/tick & EventBridge schedule (DataGeneratorLambda -> severityService)
+   * Returns severity classification rules sorted by ascending priority.
+   */
   async getSeverityRules() {
     return [...this.severityRules].sort((a, b) => a.priority - b.priority);
   }
 
+  /**
+   * Used by:
+   *  - GET /fusion/jobs (FusionJobsLambda, including ?format=csv)
+   *  - GET /fusion/jobs/failed (FusionJobsLambda)
+   * Filters, sorts, and paginates in-memory Fusion job executions.
+   */
   async listFusionExecutions(filters = {}) {
     let rows = this.fusionExecutions.map((r) => this._enrichFusion(r));
 
@@ -138,11 +189,23 @@ class MemoryAdapter {
     return { items: paged, total };
   }
 
+  /**
+   * Used by:
+   *  - GET /fusion/jobs/{executionId} (FusionJobsLambda)
+   *  - GET /incidents/{incidentId} (IncidentsLambda, when source_type === 'FUSION')
+   * Finds one Fusion execution by execution_id and enriches it with job & incident details.
+   */
   async getFusionExecutionById(executionId) {
     const row = this.fusionExecutions.find((r) => r.execution_id === executionId);
     return row ? this._enrichFusion(row) : null;
   }
 
+  /**
+   * Used by:
+   *  - GET /oic/integrations (OicIntegrationsLambda, including ?format=csv)
+   *  - GET /oic/integrations/failed (OicIntegrationsLambda)
+   * Filters, sorts, and paginates in-memory OIC integration executions.
+   */
   async listOicExecutions(filters = {}) {
     let rows = this.oicExecutions.map((r) => this._enrichOic(r));
 
@@ -192,11 +255,22 @@ class MemoryAdapter {
     return { items: paged, total };
   }
 
+  /**
+   * Used by:
+   *  - GET /oic/integrations/{instanceId} (OicIntegrationsLambda)
+   *  - GET /incidents/{incidentId} (IncidentsLambda, when source_type === 'OIC')
+   * Finds one OIC execution by instance_id and enriches it with downstream target & incident details.
+   */
   async getOicExecutionById(instanceId) {
     const row = this.oicExecutions.find((r) => r.instance_id === instanceId);
     return row ? this._enrichOic(row) : null;
   }
 
+  /**
+   * Used by: GET /dashboard/summary (DashboardLambda)
+   * Filters in-memory Fusion, OIC, and incident collections by module and date range
+   * so dashboardService can compute KPIs, success rates, and impacted downstream systems.
+   */
   async getDashboardSummary(filters = {}) {
     const from = normalizeDateBound(filters.dateFrom, false);
     const to = normalizeDateBound(filters.dateTo, true);
@@ -230,6 +304,10 @@ class MemoryAdapter {
     };
   }
 
+  /**
+   * Used by: GET /incidents (IncidentsLambda, including ?format=csv)
+   * Filters and paginates in-memory incidents sorted newest first.
+   */
   async listIncidents(filters = {}) {
     let rows = this.incidents.map((i) => this._enrichIncident(i));
 
@@ -255,6 +333,13 @@ class MemoryAdapter {
     return { items: paged, total };
   }
 
+  /**
+   * Used by:
+   *  - GET /incidents/{incidentId} (IncidentsLambda)
+   *  - PUT /incidents/{incidentId}/status (IncidentsLambda)
+   *  - POST /incidents/{incidentId}/retry (IncidentsLambda)
+   * Finds one incident by ID and attaches its sorted incident_history audit trail.
+   */
   async getIncidentById(incidentId) {
     const row = this.incidents.find((i) => i.incident_id === incidentId);
     if (!row) return null;
@@ -267,6 +352,10 @@ class MemoryAdapter {
     };
   }
 
+  /**
+   * Used by: PUT /incidents/{incidentId}/status (IncidentsLambda)
+   * Updates incident status/acknowledged_by in memory and appends a STATUS_CHANGED entry to incidentHistory.
+   */
   async updateIncidentStatus(incidentId, newStatus, { notes, performedBy } = {}) {
     const row = this.incidents.find((i) => i.incident_id === incidentId);
     if (!row) return null;
@@ -293,6 +382,11 @@ class MemoryAdapter {
     return this.getIncidentById(incidentId);
   }
 
+  /**
+   * Used by: POST /incidents/{incidentId}/retry (IncidentsLambda)
+   * Increments retry_count on the incident and its underlying Fusion/OIC execution,
+   * sets status to 'Retry Initiated', records last_retry_at, and appends a RETRY_SIMULATED history entry.
+   */
   async retryIncident(incidentId, { notes, performedBy } = {}) {
     const row = this.incidents.find((i) => i.incident_id === incidentId);
     if (!row) return null;
@@ -304,7 +398,6 @@ class MemoryAdapter {
     row.status = 'Retry Initiated';
     row.updated_at = now;
 
-    // Also update underlying execution retry_count
     if (row.source_type === 'FUSION') {
       const f = this.fusionExecutions.find((e) => e.execution_id === row.source_execution_id);
       if (f) f.retry_count += 1;
@@ -328,6 +421,13 @@ class MemoryAdapter {
     return this.getIncidentById(incidentId);
   }
 
+  /**
+   * Used by:
+   *  - GET /fusion/jobs/{executionId} (FusionJobsLambda -> correlationService)
+   *  - GET /oic/integrations/{instanceId} (OicIntegrationsLambda -> correlationService)
+   *  - GET /incidents/{incidentId} (IncidentsLambda -> correlationService)
+   * Finds exact correlation_id matches plus nearby same-process-family executions within windowMinutes.
+   */
   async findCorrelatedExecutions({ correlationId, sourceType, processFamily, referenceTime, windowMinutes }) {
     const exactFusion = correlationId
       ? this.fusionExecutions.filter((f) => f.correlation_id === correlationId).map((f) => this._enrichFusion(f))
@@ -361,6 +461,10 @@ class MemoryAdapter {
     return { exactFusion, exactOic, nearbyFusion, nearbyOic, sourceType };
   }
 
+  /**
+   * Used by: POST /simulator/tick & EventBridge 5-min schedule (DataGeneratorLambda)
+   * Prepends a simulated Fusion/OIC execution and (when applicable) auto-creates an incident + history record.
+   */
   async insertSimulatedExecution({ sourceType, execution, incident }) {
     if (sourceType === 'FUSION') {
       this.fusionExecutions.unshift(execution);
@@ -384,6 +488,10 @@ class MemoryAdapter {
     return { execution, incident };
   }
 
+  /**
+   * Used by: POST /simulator/tick & EventBridge schedule (DataGeneratorLambda)
+   * Computes next sequential IDs (FUSxxxx, OICxxxx, INCxxx) from the in-memory collections.
+   */
   async getNextIds() {
     const maxFus = this.fusionExecutions.reduce((m, r) => {
       const n = Number(String(r.execution_id).replace(/\D/g, ''));
