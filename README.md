@@ -28,6 +28,14 @@ docker compose up -d
 
 Wait ~15 seconds for `schema.sql` and `seed.sql` to initialize `oracle_monitoring`.
 
+If you are using a local MySQL or Amazon RDS instance without Docker, initialize the schema and seed data using the standalone `database/` script (edit `DB_CONFIG` in `database/init-db.js` or set `DB_HOST`/`DB_USER`/`DB_PASSWORD`):
+
+```powershell
+cd database
+npm install
+npm run init
+```
+
 ### 2. Build Frontend & Start Backend
 
 ```powershell
