@@ -136,8 +136,7 @@ async function getDashboardSummary(filters = {}) {
     recentCriticalFailures,
     impactedSystems,
     failureByCategory,
-    availableModules: meta.modules,
-    activeDbMode: meta.activeDbMode
+    availableModules: meta.modules
   };
 }
 

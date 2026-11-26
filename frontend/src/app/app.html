@@ -4,7 +4,7 @@
       <div class="brand-mark">OC</div>
       <div>
         <div class="brand-title">Oracle Cloud Operations Monitor</div>
-        <div class="brand-sub">Angular 20 &bull; Fusion Cloud ESS &bull; Oracle Integration Cloud &bull; AWS Serverless</div>
+        <div class="brand-sub">Fusion Cloud ESS &bull; Oracle Integration Cloud &bull; Downstream Impact</div>
       </div>
     </div>
 
@@ -17,9 +17,6 @@
 
     <div class="topbar-actions">
       <span class="meta-pill" title="All backend timestamps are stored and displayed in UTC">TZ: UTC</span>
-      <span class="meta-pill" [class.pill-green]="api.dbMode() === 'mysql'" [class.pill-blue]="api.dbMode() !== 'mysql'">
-        Store: {{ api.dbMode() }}
-      </span>
       <button class="btn btn-outline-light btn-sm" (click)="simulateFailure()" [disabled]="simulating()">
         {{ simulating() ? 'Simulating...' : '+ Simulate Failure' }}
       </button>
@@ -39,6 +36,6 @@
 </main>
 
 <footer class="footer">
-  <div>Oracle Fusion Cloud &amp; OIC Job Failure Monitoring Prototype &bull; Angular 20 + API Gateway + Node.js Lambda + MySQL</div>
-  <div>All timestamps displayed in UTC &bull; Simulated operational feed (no live Oracle instance connected)</div>
+  <div>Oracle Fusion Cloud &amp; OIC Job Failure Monitoring</div>
+  <div>All timestamps displayed in UTC</div>
 </footer>

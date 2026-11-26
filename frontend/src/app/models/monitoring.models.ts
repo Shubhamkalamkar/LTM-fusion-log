@@ -153,5 +153,4 @@ export interface DashboardSummary {
   }>;
   failureByCategory: Array<{ category: string; count: number }>;
   availableModules: string[];
-  activeDbMode: string;
 }

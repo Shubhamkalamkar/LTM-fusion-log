@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MonitoringApiService } from './services/monitoring-api.service';
 
@@ -9,17 +9,10 @@ import { MonitoringApiService } from './services/monitoring-api.service';
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App implements OnInit {
+export class App {
   readonly simulating = signal(false);
 
-  constructor(readonly api: MonitoringApiService) {}
-
-  ngOnInit(): void {
-    this.api.getMetadata().subscribe({
-      next: (meta) => this.api.dbMode.set(meta.activeDbMode || 'auto'),
-      error: () => this.api.dbMode.set('offline')
-    });
-  }
+  constructor(readonly api: MonitoringApiService) { }
 
   simulateFailure(): void {
     this.simulating.set(true);

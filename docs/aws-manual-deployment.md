@@ -21,8 +21,6 @@ Follow these steps in exact order to deploy the **Oracle Fusion Cloud & OIC Job 
 
 ## Part 2: Create Amazon RDS for MySQL & Load Data
 
-> **Fast Demo Skip:** If you want to test API Gateway + Lambda first **without** creating an RDS database, skip Part 2 and set `DB_MODE = memory` in Part 3 Step 4. Come back to Part 2 when ready for persistent MySQL.
-
 1. Open **AWS Console → RDS → Databases → Create database**.
 2. Choose:
    - **Engine type**: `MySQL` (version `8.0.x`)
@@ -72,16 +70,12 @@ Repeat Steps 1–5 for each of the **5 functions** listed in the table below.
      - Set **Memory**: `256 MB`
      - Set **Timeout**: `0 min 15 sec` → **Save**.
    - Go to **Configuration → Environment variables → Edit** and add:
-     - **If using In-Memory mode (no RDS):**
-       - `DB_MODE` = `memory`
-     - **If using RDS MySQL:**
-       - `DB_MODE` = `mysql`
-       - `DB_HOST` = `<your-rds-endpoint>`
-       - `DB_PORT` = `3306`
-       - `DB_NAME` = `oracle_monitoring`
-       - `DB_USER` = `<your-rds-username>`
-       - `DB_PASSWORD` = `<your-rds-password>`
-       - `CORRELATION_WINDOW_MINUTES` = `15`
+     - `DB_HOST` = `<your-rds-endpoint>`
+     - `DB_PORT` = `3306`
+     - `DB_NAME` = `oracle_monitoring`
+     - `DB_USER` = `<your-rds-username>`
+     - `DB_PASSWORD` = `<your-rds-password>`
+     - `CORRELATION_WINDOW_MINUTES` = `15`
 5. *(Only if RDS is in a private VPC without public access)*:
    - Go to **Configuration → VPC → Edit** and select the same VPC, private subnets, and Lambda security group allowed by RDS port `3306`.
 6. **Quick Lambda Smoke Test**:

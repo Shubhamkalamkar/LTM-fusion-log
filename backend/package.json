@@ -5,8 +5,6 @@
   "main": "src/local-server.js",
   "scripts": {
     "start": "node src/local-server.js",
-    "start:mysql": "node -e \"process.env.DB_MODE='mysql'; require('./src/local-server.js')\"",
-    "seed:generate": "node ../database/generate-seed.js",
     "test": "node --test tests/*.test.js"
   },
   "dependencies": {

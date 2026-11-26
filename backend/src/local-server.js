@@ -7,17 +7,13 @@ const cors = require('cors');
 
 const env = require('./config/env');
 const logger = require('./utils/logger');
-const { getDbAdapter, getActiveDbMode } = require('./db/dbClient');
+const { testConnection } = require('./db/pool');
 const dashboardLambda = require('./handlers/dashboard');
 const fusionJobsLambda = require('./handlers/fusionJobs');
 const oicIntegrationsLambda = require('./handlers/oicIntegrations');
 const incidentsLambda = require('./handlers/incidents');
 const dataGeneratorLambda = require('./handlers/dataGenerator');
 
-/**
- * Adapts Express req/res into an AWS API Gateway Proxy Event & Context,
- * invoking the exact same Lambda handler functions used in production AWS.
- */
 function invokeLambda(lambdaModule, pathParamKeys = []) {
   return async (req, res) => {
     const pathParameters = {};
@@ -59,11 +55,9 @@ function createApp() {
   app.use(cors());
   app.use(express.json());
 
-  // Serve Angular 20 production build output
   const angularDistDir = path.join(__dirname, '../../frontend/dist/oracle-monitor/browser');
   app.use(express.static(angularDistDir));
 
-  // Mount REST routes on both "/" and "/api" prefixes (matching OpenAPI & SPA)
   const prefixes = ['', '/api'];
   for (const prefix of prefixes) {
     app.get(`${prefix}/dashboard/summary`, invokeLambda(dashboardLambda));
@@ -85,13 +79,15 @@ function createApp() {
     app.post(`${prefix}/simulator/tick`, invokeLambda(dataGeneratorLambda));
   }
 
-  // Health probe
   app.get('/health', async (req, res) => {
-    await getDbAdapter();
-    res.json({ status: 'ok', dbMode: getActiveDbMode(), timestamp: new Date().toISOString() });
+    try {
+      await testConnection();
+      res.json({ status: 'ok', database: 'mysql', timestamp: new Date().toISOString() });
+    } catch (err) {
+      res.status(503).json({ status: 'error', database: 'unreachable', message: err.message });
+    }
   });
 
-  // Fallback to Angular 20 SPA index.html
   app.get('*', (req, res) => {
     res.sendFile(path.join(angularDistDir, 'index.html'));
   });
@@ -101,13 +97,15 @@ function createApp() {
 
 if (require.main === module) {
   (async () => {
-    await getDbAdapter();
+    try {
+      await testConnection();
+      logger.info({ message: 'Connected to MySQL database' });
+    } catch (err) {
+      logger.warn({ message: 'MySQL connection check failed at startup; requests will retry pool', reason: err.code || err.message });
+    }
     const app = createApp();
     app.listen(env.port, () => {
-      logger.info({
-        message: `Oracle Cloud Monitoring local server running at http://localhost:${env.port}`,
-        dbMode: getActiveDbMode()
-      });
+      logger.info({ message: `Server listening on http://localhost:${env.port}` });
     });
   })();
 }

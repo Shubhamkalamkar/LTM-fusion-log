@@ -2,7 +2,21 @@
 
 const dashboardRepository = require('../repositories/dashboardRepository');
 const { classifySeverity } = require('./severityService');
-const { FAILURE_CATALOG } = require('../config/dataset');
+
+const FAILURE_CATALOG = [
+  { code: 'AUTH-401', category: 'Authentication / authorization', msg: 'Authentication failed: OAuth2 bearer token expired (HTTP 401)' },
+  { code: 'AUTH-403', category: 'Authentication / authorization', msg: 'HTTP 403 Forbidden: service account missing integration role' },
+  { code: 'NET-TIMEOUT', category: 'Connectivity', msg: 'Connection timeout after 30000ms reaching downstream endpoint' },
+  { code: 'NET-DNS', category: 'Connectivity', msg: 'DNS failure resolving external partner gateway hostname' },
+  { code: 'APP-500', category: 'Application', msg: 'HTTP 500 from target system during synchronous API invocation' },
+  { code: 'APP-UNAVAIL', category: 'Application', msg: 'Target unavailable: service returned 503 Service Unavailable' },
+  { code: 'PAY-CUST', category: 'Payload / validation', msg: 'Invalid customer account reference in AutoInvoice interface batch' },
+  { code: 'PAY-MAND', category: 'Payload / validation', msg: 'Invalid payload: missing mandatory field CURRENCY_CODE' },
+  { code: 'FIN-PERIOD', category: 'Finance control', msg: 'Accounting period is closed for Primary US Ledger (NOV-26)' },
+  { code: 'FIN-LEDGER', category: 'Finance control', msg: 'Invalid ledger or business unit mapping for intercompany journal' },
+  { code: 'DQ-EMP', category: 'Data quality', msg: 'Employee record validation failure: missing national identifier' },
+  { code: 'DQ-DUP', category: 'Data quality', msg: 'Duplicate transaction detected for external invoice reference' }
+];
 
 /**
  * Helper used by: generateSimulatedEvent()

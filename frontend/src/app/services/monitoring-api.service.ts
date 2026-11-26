@@ -14,7 +14,6 @@ import {
 export class MonitoringApiService {
   private readonly baseUrl = environment.apiBaseUrl;
 
-  readonly dbMode = signal<string>('auto');
   readonly toast = signal<{ message: string; type: 'info' | 'success' | 'error' } | null>(null);
   private readonly refreshSubject = new Subject<void>();
   readonly refresh$ = this.refreshSubject.asObservable();
@@ -55,8 +54,8 @@ export class MonitoringApiService {
     return entries.length ? `?${entries.join('&')}` : '';
   }
 
-  getMetadata(): Observable<{ activeDbMode: string; modules: string[]; sources: string[] }> {
-    return this.http.get<{ activeDbMode: string; modules: string[]; sources: string[] }>(
+  getMetadata(): Observable<{ modules: string[]; sources: string[] }> {
+    return this.http.get<{ modules: string[]; sources: string[] }>(
       `${this.baseUrl}/dashboard/metadata`
     );
   }
